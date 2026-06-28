@@ -3,7 +3,7 @@
  * Ponto de entrada. Orquestra autenticação, inicialização dos módulos de UI
  * e conecta os controles globais (busca, filtros, botão "nova tarefa").
  */
-
+import { initCalendar, refreshCalendarSize } from './calendar.js';
 import { login, logout, observeAuth, translateAuthError } from './auth.js';
 import { startTaskslistener, stopTasksListener, onTasksChange } from './tasks.js';
 import { initKanban, renderBoard } from './kanban.js';
@@ -40,6 +40,11 @@ const els = {
   modalOverlay: document.getElementById('modal-overlay'),
   modalPanel: document.getElementById('modal-panel'),
   themeToggle: document.getElementById('theme-toggle'),
+  calendarSection: document.getElementById('calendar-section'), // Container do FullCalendar
+  btnKanbanView: document.getElementById('btn-kanban-view'),     // Botão aba Kanban
+  btnCalendarView: document.getElementById('btn-calendar-view'), // Botão aba Agenda
+  
+  newTaskBtn: document.getElementById('new-task-btn'),
 };
 
 /* ---------- Auth ---------- */
@@ -122,6 +127,8 @@ function bootstrapApp() {
     renderBoard();
     renderDashboard(tasks);
     populateAssigneeFilter(tasks);
+  });
+  initCalendar(tasks); 
   });
 }
 
@@ -208,3 +215,29 @@ els.themeToggle.addEventListener('click', () => {
 });
 
 initTheme();
+if (els.btnKanbanView && els.btnCalendarView) {
+  els.btnCalendarView.addEventListener('click', () => {
+    // Oculta o Kanban e o Dashboard (se necessário), mostra o calendário
+    els.board.style.display = 'none';
+    if (els.dashboard) els.dashboard.style.display = 'none';
+    els.calendarSection.style.display = 'block';
+
+    // Ajusta classes ativas dos botões
+    els.btnKanbanView.classList.remove('active');
+    els.btnCalendarView.classList.add('active');
+
+    // Força o FullCalendar a recalcular o tamanho (evita bugs visuais por iniciar oculto)
+    refreshCalendarSize();
+  });
+
+  els.btnKanbanView.addEventListener('click', () => {
+    // Oculta o calendário, mostra o Kanban e o Dashboard
+    els.calendarSection.style.display = 'none';
+    els.board.style.display = 'grid'; // ou o display original do seu layout do board
+    if (els.dashboard) els.dashboard.style.display = 'block';
+
+    // Ajusta classes ativas dos botões
+    els.btnCalendarView.classList.remove('active');
+    els.btnKanbanView.classList.add('active');
+  });
+}
