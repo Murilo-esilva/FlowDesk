@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..700&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,500&display=swap" rel="stylesheet">
-
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -71,7 +71,19 @@
       <i data-lucide="layout-dashboard"></i>
       <span>Creative Task Board</span>
     </div>
+    <div class="view-switchers" style="padding: 10px; display: flex; gap: 10px;">
+        <button id="btn-kanban-view" class="btn active">📋 Quadro Kanban</button>
+        <button id="btn-calendar-view" class="btn">📅 Agenda / Calendário</button>
+    </div>
+    
+    <section id="kanban-section">
+        </section>
 
+<section id="calendar-section" style="display: none; padding: 20px;">
+    <div id="calendar"></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
     <div class="topbar__actions">
       <button id="theme-toggle" class="icon-btn" aria-label="Alternar tema">
         <i data-lucide="sun-moon"></i>
