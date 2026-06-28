@@ -21,12 +21,13 @@ import { getStorage } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-
 
 // ⚠️ Substitua pelos dados reais do seu projeto Firebase.
 const firebaseConfig = {
-  apiKey: 'SUA_API_KEY',
-  authDomain: 'seu-projeto.firebaseapp.com',
-  projectId: 'seu-projeto',
-  storageBucket: 'seu-projeto.appspot.com',
-  messagingSenderId: 'SEU_SENDER_ID',
-  appId: 'SEU_APP_ID',
+  apiKey: "AIzaSyBXccg-DRzWAv3UURp4ZCfb7r6T9Gc6yZc",
+  authDomain: "flowdesk-2ea8c.firebaseapp.com",
+  projectId: "flowdesk-2ea8c",
+  storageBucket: "flowdesk-2ea8c.firebasestorage.app",
+  messagingSenderId: "723085701908",
+  appId: "1:723085701908:web:a95afdfa7092ef0656c801",
+  measurementId: "G-0RFK2YRFPM"
 };
 
 export const app = initializeApp(firebaseConfig);
