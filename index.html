@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Creative Task Board · Univ. Terceira Idade</title>
+<meta name="description" content="Gestão de demandas de design gráfico — da solicitação à entrega." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..700&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+<!-- ===================== TELA DE LOGIN ===================== -->
+<section id="login-screen" class="screen login-screen is-visible">
+  <div class="login-screen__art" aria-hidden="true">
+    <svg class="login-blob" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="blobGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ff7a59"/>
+          <stop offset="100%" stop-color="#ffb454"/>
+        </linearGradient>
+      </defs>
+      <path fill="url(#blobGrad)" d="M421,67Q481,134,468,217Q455,300,432,372Q409,444,335,470Q261,496,189,463Q117,430,79,358Q41,286,64,206Q87,126,156,79Q225,32,303,30Q381,28,421,67Z" />
+    </svg>
+    <div class="login-screen__brandmark">
+      <i data-lucide="palette"></i>
+    </div>
+  </div>
+
+  <div class="login-screen__panel">
+    <div class="login-card">
+      <div class="login-card__logo">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Creative Task Board</span>
+      </div>
+      <p class="login-card__subtitle">Gestão de artes da Universidade Aberta à Terceira Idade</p>
+
+      <form id="login-form" class="login-form" novalidate>
+        <label class="field">
+          <span>E-mail</span>
+          <input type="email" name="email" required autocomplete="username" placeholder="voce@universidade.edu.br" />
+        </label>
+        <label class="field">
+          <span>Senha</span>
+          <input type="password" name="password" required autocomplete="current-password" placeholder="••••••••" />
+        </label>
+
+        <p id="login-error" class="login-error" role="alert"></p>
+
+        <button type="submit" id="login-submit" class="btn btn--primary btn--block">
+          <span class="btn__label">Entrar</span>
+          <i data-lucide="loader-2" class="btn__spinner"></i>
+        </button>
+      </form>
+      <p class="login-card__hint">Acesso restrito à equipe do núcleo de comunicação visual.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== APP PRINCIPAL ===================== -->
+<section id="app-screen" class="screen app-screen">
+
+  <header class="topbar">
+    <div class="topbar__brand">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Creative Task Board</span>
+    </div>
+
+    <div class="topbar__actions">
+      <button id="theme-toggle" class="icon-btn" aria-label="Alternar tema">
+        <i data-lucide="sun-moon"></i>
+      </button>
+      <div class="topbar__user">
+        <span class="avatar avatar--user" id="user-avatar">--</span>
+        <span id="user-email" class="topbar__email"></span>
+      </div>
+      <button id="logout-btn" class="icon-btn" aria-label="Sair">
+        <i data-lucide="log-out"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Dashboard -->
+    <section class="dashboard" id="dashboard" aria-label="Indicadores"></section>
+
+    <!-- Toolbar -->
+    <section class="toolbar">
+      <div class="toolbar__search">
+        <i data-lucide="search"></i>
+        <input type="search" id="search-input" placeholder="Buscar por título, tag ou responsável..." />
+      </div>
+
+      <div class="toolbar__filters">
+        <select id="filter-category" class="select-control"></select>
+        <select id="filter-priority" class="select-control"></select>
+        <select id="filter-assignee" class="select-control">
+          <option value="all">Todos responsáveis</option>
+        </select>
+        <select id="filter-deadline" class="select-control">
+          <option value="all">Qualquer prazo</option>
+          <option value="overdue">Atrasadas</option>
+          <option value="due-3">Vencendo em 3 dias</option>
+          <option value="due-7">Vencendo em 7 dias</option>
+        </select>
+        <select id="sort-select" class="select-control">
+          <option value="createdAt-desc">Mais recentes</option>
+          <option value="createdAt-asc">Mais antigas</option>
+          <option value="dueDate-asc">Prazo mais próximo</option>
+          <option value="priority-desc">Prioridade</option>
+          <option value="title-asc">Título A–Z</option>
+        </select>
+        <button id="reset-filters-btn" class="icon-btn" aria-label="Limpar filtros" title="Limpar filtros">
+          <i data-lucide="filter-x"></i>
+        </button>
+      </div>
+
+      <button id="new-task-btn" class="btn btn--primary">
+        <i data-lucide="plus"></i> Nova tarefa
+      </button>
+    </section>
+
+    <!-- Board -->
+    <section class="kanban-board" id="kanban-board" aria-label="Board Kanban"></section>
+
+  </main>
+</section>
+
+<!-- ===================== MODAL DE TAREFA ===================== -->
+<div id="modal-overlay" class="modal-overlay">
+  <div id="modal-panel" class="modal-panel" role="dialog" aria-modal="true"></div>
+</div>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>
+  // Re-renderiza ícones sempre que novos elementos com data-lucide entram no DOM.
+  window.addEventListener('DOMContentLoaded', () => window.lucide?.createIcons());
+</script>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
