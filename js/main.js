@@ -127,7 +127,7 @@ function bootstrapApp() {
     renderBoard();
     renderDashboard(tasks);
     populateAssigneeFilter(tasks);
-  });
+  
   initCalendar(tasks); 
   });
 }
