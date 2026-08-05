@@ -1,8 +1,4 @@
-**
- * main.js
- * Ponto de entrada. Orquestra autenticação, inicialização dos módulos de UI
- * e conecta os controles globais (busca, filtros, botão "nova tarefa").
- */
+
 import { initCalendar, refreshCalendarSize } from './calendar.js';
 import { login, logout, observeAuth, translateAuthError } from './auth.js';
 import { startTaskslistener, stopTasksListener, onTasksChange } from './tasks.js';
