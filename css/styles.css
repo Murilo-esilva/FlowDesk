@@ -169,4 +169,77 @@ body::before {
 }
 .login-card__hint { margin: 22px 0 0; font-size: 12.5px; color: var(--text-faint); text-align: center; }
 
-/* Rest of stylesheet unchanged... */
+/* ===================== Topbar / Layout ===================== */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.02));
+  border-bottom: 1px solid var(--border-soft);
+  position: sticky; top: 0; z-index: 40;
+}
+.topbar__brand { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.topbar__brand i { width: 20px; height: 20px; color: var(--accent); }
+.topbar__actions { display: flex; align-items: center; gap: 10px; }
+.topbar__user { display: flex; align-items: center; gap: 8px; margin-left: 6px; }
+.avatar { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+.topbar__email { font-size: 13px; color: var(--text-dim); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text); }
+.btn--primary { background: linear-gradient(180deg,var(--accent),var(--accent-strong)); color: #fff; border: none; box-shadow: var(--shadow-sm); }
+.btn.active { background: rgba(255,255,255,0.02); border-color: var(--border); }
+.icon-btn { background: transparent; border: none; padding: 8px; border-radius: 8px; color: var(--text-dim); }
+.icon-btn:hover { background: var(--bg-card); }
+
+/* App main layout */
+.app-main { padding: 18px; display: grid; grid-template-columns: 320px 1fr; gap: 18px; align-items: start; }
+.dashboard { background: var(--bg-card); border: 1px solid var(--border); padding: 14px; border-radius: var(--radius-md); }
+
+/* Toolbar */
+.toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.toolbar__search { display: flex; align-items: center; gap: 8px; background: var(--bg-card); border: 1px solid var(--border); padding: 6px 10px; border-radius: 10px; }
+.toolbar__search input { border: none; background: transparent; color: var(--text); outline: none; width: 280px; }
+.toolbar__filters { display: flex; gap: 8px; align-items: center; }
+.select-control { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; border-radius: 8px; }
+
+/* Kanban board */
+.kanban-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.kanban-column { background: linear-gradient(180deg, var(--bg-card), var(--bg-elevated)); border: 1px solid var(--border); padding: 12px; border-radius: 12px; min-height: 220px; display: flex; flex-direction: column; }
+.kanban-column__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.kanban-column__title { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.kanban-column__title i { width: 18px; height: 18px; color: var(--accent); }
+.kanban-column__list { display: flex; flex-direction: column; gap: 10px; }
+.kanban-empty { color: var(--text-faint); padding: 12px; border-radius: 8px; background: transparent; text-align: center; }
+
+.task-card { background: var(--bg-card); border: 1px solid var(--border); padding: 10px; border-radius: 10px; box-shadow: var(--shadow-sm); cursor: pointer; }
+.task-card__title { margin: 6px 0; font-size: 15px; }
+.task-card__desc { margin: 0; color: var(--text-dim); font-size: 13px; }
+.task-card__meta { display: flex; gap: 8px; align-items: center; }
+.badge { padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,0.02); font-size: 12px; border: 1px solid var(--border); }
+.tag-chip { display: inline-block; background: rgba(0,0,0,0.12); padding: 4px 6px; border-radius: 6px; margin-right: 6px; font-size: 12px; }
+.checklist-mini { font-size: 12px; color: var(--text-dim); }
+.task-card--dragging { opacity: 0.6; transform: scale(.98); }
+.kanban-column__list--over { outline: 2px dashed var(--accent); }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 80; }
+.modal-overlay.is-open { display: flex; }
+.modal-panel { width: 720px; max-width: calc(100% - 40px); background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: var(--shadow-lg); }
+
+/* Responsive */
+@media (max-width: 980px) {
+  .app-main { grid-template-columns: 1fr; }
+  .kanban-board { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .kanban-board { grid-template-columns: 1fr; }
+  .toolbar__search input { width: 140px; }
+}
+
+/* Ensure lucide icons get reasonable sizing */
+[data-lucide] { width: 18px; height: 18px; vertical-align: middle; }
+
+/* End of stylesheet */
