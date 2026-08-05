@@ -128,9 +128,10 @@ function bootstrapApp() {
     renderDashboard(tasks);
     populateAssigneeFilter(tasks);
   });
+
   initCalendar(tasks); 
-  });
 }
+
 
 function populateStaticFilters() {
   els.filterCategory.innerHTML =
