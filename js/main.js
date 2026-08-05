@@ -1,92 +1,34 @@
+/**
+ * main.js
+ * Ponto de entrada. Orquestra autenticação, inicialização dos módulos de UI
+ * e conecta os controles globais (busca, filtros, botão "nova tarefa").
+ */
+import { initCalendar, refreshCalendarSize } from './calendar.js';
+import { login, logout, observeAuth, translateAuthError } from './auth.js';
+import { startTaskslistener, stopTasksListener, onTasksChange } from './tasks.js';
+import { initKanban, renderBoard } from './kanban.js';
+import { initModal, openCreateModal, openEditModal } from './modal.js';
+import { initDashboard, renderDashboard } from './dashboard.js';
 import {
-  initCalendar,
-  refreshCalendarSize,
-} from './calendar.js';
-
-import {
-  login,
-  logout,
-  observeAuth,
-  translateAuthError,
-} from './auth.js';
-
-import {
-  startTaskslistener,
-  stopTasksListener,
-  onTasksChange,
-} from './tasks.js';
-
-import {
-  initKanban,
-  renderBoard,
-} from './kanban.js';
-
-import {
-  initModal,
-  openCreateModal,
-  openEditModal,
-} from './modal.js';
-
-import {
-  initDashboard,
-  renderDashboard,
-} from './dashboard.js';
-
-import {
-  setFilter,
-  resetFilters,
-  uniqueAssignees,
+  setFilter, resetFilters, uniqueAssignees,
 } from './filters.js';
-
-import {
-  debounce,
-  toast,
-  CATEGORIES,
-  PRIORITIES,
-} from './utils.js';
-
-/* ==========================================================
-   ESTADO DA APLICAÇÃO
-========================================================== */
+import { debounce, toast, CATEGORIES, PRIORITIES } from './utils.js';
 
 let currentUser = null;
-let bootstrapped = false;
-let activeView = 'kanban';
 
-/* ==========================================================
-   ELEMENTOS DO DOM
-========================================================== */
+/* ---------- Elementos ---------- */
 
 const els = {
-  // Telas
   loginScreen: document.getElementById('login-screen'),
   appScreen: document.getElementById('app-screen'),
-
-  // Login
   loginForm: document.getElementById('login-form'),
   loginError: document.getElementById('login-error'),
   loginSubmitBtn: document.getElementById('login-submit'),
-
-  // Usuário
   userEmail: document.getElementById('user-email'),
   userAvatar: document.getElementById('user-avatar'),
   logoutBtn: document.getElementById('logout-btn'),
-
-  // Visualizações
-  kanbanSection: document.getElementById('kanban-section'),
-  calendarSection: document.getElementById('calendar-section'),
-  btnKanbanView: document.getElementById('btn-kanban-view'),
-  btnCalendarView: document.getElementById('btn-calendar-view'),
-
-  // Kanban e dashboard
   board: document.getElementById('kanban-board'),
   dashboard: document.getElementById('dashboard'),
-
-  // Calendário
-  calendar: document.getElementById('calendar'),
-  calendarNewTaskBtn: document.getElementById('calendar-new-task-btn'),
-
-  // Toolbar
   newTaskBtn: document.getElementById('new-task-btn'),
   searchInput: document.getElementById('search-input'),
   filterCategory: document.getElementById('filter-category'),
@@ -95,22 +37,20 @@ const els = {
   filterDeadline: document.getElementById('filter-deadline'),
   sortSelect: document.getElementById('sort-select'),
   resetFiltersBtn: document.getElementById('reset-filters-btn'),
-
-  // Modal
   modalOverlay: document.getElementById('modal-overlay'),
   modalPanel: document.getElementById('modal-panel'),
-
-  // Tema
   themeToggle: document.getElementById('theme-toggle'),
+  calendarSection: document.getElementById('calendar-section'), // Container do FullCalendar
+  btnKanbanView: document.getElementById('btn-kanban-view'),     // Botão aba Kanban
+  btnCalendarView: document.getElementById('btn-calendar-view'), // Botão aba Agenda
+  
+  newTaskBtn: document.getElementById('new-task-btn'),
 };
 
-/* ==========================================================
-   AUTENTICAÇÃO
-========================================================== */
+/* ---------- Auth ---------- */
 
 observeAuth((user) => {
   currentUser = user;
-
   if (user) {
     showApp(user);
   } else {
@@ -118,507 +58,187 @@ observeAuth((user) => {
   }
 });
 
-/**
- * Realiza o login do usuário.
- */
-els.loginForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  const formData = new FormData(els.loginForm);
-
-  const email = String(formData.get('email') || '').trim();
-  const password = String(formData.get('password') || '');
-
-  if (!email || !password) {
-    setLoginError('Informe o e-mail e a senha.');
-    return;
-  }
-
-  setLoginError('');
-  setLoginLoading(true);
+els.loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(els.loginForm);
+  const email = fd.get('email');
+  const password = fd.get('password');
+  els.loginError.textContent = '';
+  els.loginSubmitBtn.disabled = true;
+  els.loginSubmitBtn.classList.add('is-loading');
 
   try {
     await login(email, password);
     els.loginForm.reset();
-  } catch (error) {
-    console.error('Erro ao realizar login:', error);
-
-    const message = translateAuthError(error?.code);
-    setLoginError(message || 'Não foi possível realizar o login.');
+  } catch (err) {
+    els.loginError.textContent = translateAuthError(err.code);
   } finally {
-    setLoginLoading(false);
+    els.loginSubmitBtn.disabled = false;
+    els.loginSubmitBtn.classList.remove('is-loading');
   }
 });
 
-/**
- * Encerra a sessão do usuário.
- */
-els.logoutBtn?.addEventListener('click', async () => {
-  try {
-    els.logoutBtn.disabled = true;
-
-    stopTasksListener();
-    await logout();
-  } catch (error) {
-    console.error('Erro ao sair:', error);
-    toast('Não foi possível encerrar a sessão.', 'error');
-  } finally {
-    els.logoutBtn.disabled = false;
-  }
+els.logoutBtn.addEventListener('click', async () => {
+  stopTasksListener();
+  await logout();
 });
 
-/**
- * Exibe a tela de login.
- */
 function showLogin() {
-  currentUser = null;
-
-  els.appScreen?.classList.remove('is-visible');
-  els.loginScreen?.classList.add('is-visible');
-
-  setLoginError('');
+  els.appScreen.classList.remove('is-visible');
+  els.loginScreen.classList.add('is-visible');
 }
 
-/**
- * Exibe a aplicação principal.
- *
- * @param {Object} user Usuário autenticado.
- */
 function showApp(user) {
-  els.loginScreen?.classList.remove('is-visible');
-  els.appScreen?.classList.add('is-visible');
-
-  const email = user?.email || '';
-
-  if (els.userEmail) {
-    els.userEmail.textContent = email;
-  }
-
-  if (els.userAvatar) {
-    els.userAvatar.textContent = getUserInitials(email);
-  }
-
-  showKanbanView();
+  els.loginScreen.classList.remove('is-visible');
+  els.appScreen.classList.add('is-visible');
+  els.userEmail.textContent = user.email;
+  els.userAvatar.textContent = user.email.slice(0, 2).toUpperCase();
   bootstrapApp();
 }
 
-/**
- * Retorna as iniciais que serão mostradas no avatar.
- *
- * @param {string} email E-mail do usuário.
- * @returns {string}
- */
-function getUserInitials(email) {
-  if (!email) return '--';
+/* ---------- Bootstrap dos módulos (uma vez por sessão) ---------- */
 
-  const username = email.split('@')[0];
+let bootstrapped = false;
 
-  const parts = username
-    .split(/[._\-\s]+/)
-    .filter(Boolean);
-
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-
-  return username.slice(0, 2).toUpperCase();
-}
-
-/**
- * Exibe uma mensagem de erro no formulário de login.
- *
- * @param {string} message Mensagem de erro.
- */
-function setLoginError(message) {
-  if (els.loginError) {
-    els.loginError.textContent = message;
-  }
-}
-
-/**
- * Controla o estado de carregamento do botão de login.
- *
- * @param {boolean} isLoading Estado de carregamento.
- */
-function setLoginLoading(isLoading) {
-  if (!els.loginSubmitBtn) return;
-
-  els.loginSubmitBtn.disabled = isLoading;
-  els.loginSubmitBtn.classList.toggle('is-loading', isLoading);
-}
-
-/* ==========================================================
-   INICIALIZAÇÃO DA APLICAÇÃO
-========================================================== */
-
-/**
- * Inicializa os módulos da aplicação uma única vez.
- */
 function bootstrapApp() {
   if (bootstrapped) {
     startTaskslistener();
     return;
   }
-
   bootstrapped = true;
 
   populateStaticFilters();
 
   initKanban(els.board, {
-    onCardClick: (taskId) => {
-      openEditModal(taskId);
-    },
-
-    getUserEmail: () => currentUser?.email || '',
+    onCardClick: (taskId) => openEditModal(taskId),
+    getUserEmail: () => currentUser?.email,
   });
 
   initModal(els.modalOverlay, els.modalPanel, {
-    getUserEmail: () => currentUser?.email || '',
+    getUserEmail: () => currentUser?.email,
   });
 
   initDashboard(els.dashboard);
 
   bindToolbarEvents();
-  bindViewEvents();
+  startTaskslistener();
 
-  /*
-   * O calendário recebe as tarefas sempre que houver uma alteração.
-   * O calendar.js deve reutilizar a instância existente do FullCalendar.
-   */
-  onTasksChange((tasks = []) => {
+  onTasksChange((tasks) => {
     renderBoard();
     renderDashboard(tasks);
     populateAssigneeFilter(tasks);
-    initCalendar(tasks);
-
-    if (activeView === 'calendar') {
-      requestAnimationFrame(() => {
-        refreshCalendarSize();
-      });
-    }
-
-    window.lucide?.createIcons();
+  
+  initCalendar(tasks); 
   });
-
-  startTaskslistener();
 }
 
-/* ==========================================================
-   FILTROS
-========================================================== */
-
-/**
- * Preenche os filtros fixos de categoria e prioridade.
- */
 function populateStaticFilters() {
-  if (els.filterCategory) {
-    els.filterCategory.innerHTML = [
-      '<option value="all">Todas categorias</option>',
-      ...CATEGORIES.map((category) => {
-        return `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
-      }),
-    ].join('');
-  }
+  els.filterCategory.innerHTML =
+    `<option value="all">Todas categorias</option>` +
+    CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join('');
 
-  if (els.filterPriority) {
-    els.filterPriority.innerHTML = [
-      '<option value="all">Todas prioridades</option>',
-      ...PRIORITIES.map((priority) => {
-        return `
-          <option value="${escapeHtml(priority.id)}">
-            ${escapeHtml(priority.label)}
-          </option>
-        `;
-      }),
-    ].join('');
-  }
+  els.filterPriority.innerHTML =
+    `<option value="all">Todas prioridades</option>` +
+    PRIORITIES.map((p) => `<option value="${p.id}">${p.label}</option>`).join('');
 }
 
-/**
- * Preenche o filtro de responsáveis com base nas tarefas.
- *
- * @param {Array} tasks Lista de tarefas.
- */
 function populateAssigneeFilter(tasks) {
-  if (!els.filterAssignee) return;
-
-  const selectedValue = els.filterAssignee.value || 'all';
+  const current = els.filterAssignee.value || 'all';
   const names = uniqueAssignees(tasks);
-
-  els.filterAssignee.innerHTML = [
-    '<option value="all">Todos responsáveis</option>',
-    ...names.map((name) => {
-      return `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-    }),
-  ].join('');
-
-  if (names.includes(selectedValue)) {
-    els.filterAssignee.value = selectedValue;
-  } else {
-    els.filterAssignee.value = 'all';
-  }
+  els.filterAssignee.innerHTML =
+    `<option value="all">Todos responsáveis</option>` +
+    names.map((n) => `<option value="${n}">${n}</option>`).join('');
+  if (names.includes(current)) els.filterAssignee.value = current;
 }
 
-/* ==========================================================
-   EVENTOS DA TOOLBAR
-========================================================== */
+/* ---------- Toolbar: busca, filtros, ordenação, nova tarefa ---------- */
 
-/**
- * Registra os eventos da barra de ferramentas.
- */
 function bindToolbarEvents() {
-  els.newTaskBtn?.addEventListener('click', () => {
-    openCreateModal();
-  });
-
-  els.calendarNewTaskBtn?.addEventListener('click', () => {
-    openCreateModal();
-  });
+  els.newTaskBtn.addEventListener('click', () => openCreateModal());
 
   const debouncedSearch = debounce((value) => {
-    setFilter('search', value.trim());
+    setFilter('search', value);
     renderBoard();
   }, 200);
 
-  els.searchInput?.addEventListener('input', (event) => {
-    debouncedSearch(event.target.value);
-  });
+  els.searchInput.addEventListener('input', (e) => debouncedSearch(e.target.value));
 
-  els.filterCategory?.addEventListener('change', (event) => {
-    setFilter('category', event.target.value);
+  els.filterCategory.addEventListener('change', (e) => {
+    setFilter('category', e.target.value);
+    renderBoard();
+  });
+  els.filterPriority.addEventListener('change', (e) => {
+    setFilter('priority', e.target.value);
+    renderBoard();
+  });
+  els.filterAssignee.addEventListener('change', (e) => {
+    setFilter('assignee', e.target.value);
+    renderBoard();
+  });
+  els.filterDeadline.addEventListener('change', (e) => {
+    setFilter('deadline', e.target.value);
+    renderBoard();
+  });
+  els.sortSelect.addEventListener('change', (e) => {
+    setFilter('sortBy', e.target.value);
     renderBoard();
   });
 
-  els.filterPriority?.addEventListener('change', (event) => {
-    setFilter('priority', event.target.value);
-    renderBoard();
-  });
-
-  els.filterAssignee?.addEventListener('change', (event) => {
-    setFilter('assignee', event.target.value);
-    renderBoard();
-  });
-
-  els.filterDeadline?.addEventListener('change', (event) => {
-    setFilter('deadline', event.target.value);
-    renderBoard();
-  });
-
-  els.sortSelect?.addEventListener('change', (event) => {
-    setFilter('sortBy', event.target.value);
-    renderBoard();
-  });
-
-  els.resetFiltersBtn?.addEventListener('click', () => {
-    resetAllFilters();
-  });
-}
-
-/**
- * Limpa os filtros e atualiza o quadro.
- */
-function resetAllFilters() {
-  resetFilters();
-
-  if (els.searchInput) {
+  els.resetFiltersBtn.addEventListener('click', () => {
+    resetFilters();
     els.searchInput.value = '';
-  }
-
-  if (els.filterCategory) {
     els.filterCategory.value = 'all';
-  }
-
-  if (els.filterPriority) {
     els.filterPriority.value = 'all';
-  }
-
-  if (els.filterAssignee) {
     els.filterAssignee.value = 'all';
-  }
-
-  if (els.filterDeadline) {
     els.filterDeadline.value = 'all';
-  }
-
-  if (els.sortSelect) {
     els.sortSelect.value = 'createdAt-desc';
-  }
-
-  renderBoard();
-  toast('Filtros limpos.', 'info', 1800);
-}
-
-/* ==========================================================
-   ALTERNÂNCIA ENTRE KANBAN E CALENDÁRIO
-========================================================== */
-
-/**
- * Registra os eventos dos botões de visualização.
- */
-function bindViewEvents() {
-  els.btnKanbanView?.addEventListener('click', () => {
-    showKanbanView();
-  });
-
-  els.btnCalendarView?.addEventListener('click', () => {
-    showCalendarView();
+    renderBoard();
+    toast('Filtros limpos.', 'info', 1800);
   });
 }
 
-/**
- * Mostra a visualização Kanban.
- */
-function showKanbanView() {
-  activeView = 'kanban';
-
-  if (els.kanbanSection) {
-    els.kanbanSection.hidden = false;
-  }
-
-  if (els.calendarSection) {
-    els.calendarSection.hidden = true;
-  }
-
-  els.btnKanbanView?.classList.add('active');
-  els.btnCalendarView?.classList.remove('active');
-
-  els.btnKanbanView?.setAttribute('aria-pressed', 'true');
-  els.btnCalendarView?.setAttribute('aria-pressed', 'false');
-
-  window.lucide?.createIcons();
-}
-
-/**
- * Mostra a visualização do calendário.
- */
-function showCalendarView() {
-  activeView = 'calendar';
-
-  if (els.kanbanSection) {
-    els.kanbanSection.hidden = true;
-  }
-
-  if (els.calendarSection) {
-    els.calendarSection.hidden = false;
-  }
-
-  els.btnKanbanView?.classList.remove('active');
-  els.btnCalendarView?.classList.add('active');
-
-  els.btnKanbanView?.setAttribute('aria-pressed', 'false');
-  els.btnCalendarView?.setAttribute('aria-pressed', 'true');
-
-  /*
-   * O calendário foi criado enquanto seu contêiner estava oculto.
-   * Por isso, o ajuste de tamanho deve ocorrer após a exibição.
-   */
-  requestAnimationFrame(() => {
-    refreshCalendarSize();
-
-    /*
-     * Um segundo ajuste ajuda quando o layout possui transições CSS.
-     */
-    setTimeout(() => {
-      refreshCalendarSize();
-    }, 100);
-  });
-
-  window.lucide?.createIcons();
-}
-
-/* ==========================================================
-   TEMA
-========================================================== */
+/* ---------- Tema ---------- */
 
 const THEME_KEY = 'ctb-theme';
 
-/**
- * Inicializa o tema salvo no navegador.
- */
 function initTheme() {
-  const savedTheme = localStorage.getItem(THEME_KEY);
-  const theme = savedTheme === 'light' ? 'light' : 'dark';
-
+  const saved = localStorage.getItem(THEME_KEY);
+  const theme = saved || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
 }
 
-/**
- * Alterna entre os temas claro e escuro.
- */
-els.themeToggle?.addEventListener('click', () => {
-  const currentTheme =
-    document.documentElement.getAttribute('data-theme') || 'dark';
-
-  const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-  document.documentElement.setAttribute('data-theme', nextTheme);
-  localStorage.setItem(THEME_KEY, nextTheme);
-
-  /*
-   * Recalcula o tamanho do calendário após a mudança visual.
-   */
-  if (activeView === 'calendar') {
-    requestAnimationFrame(() => {
-      refreshCalendarSize();
-    });
-  }
+els.themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem(THEME_KEY, next);
 });
 
 initTheme();
+if (els.btnKanbanView && els.btnCalendarView) {
+  els.btnCalendarView.addEventListener('click', () => {
+    // Oculta o Kanban e o Dashboard (se necessário), mostra o calendário
+    els.board.style.display = 'none';
+    if (els.dashboard) els.dashboard.style.display = 'none';
+    els.calendarSection.style.display = 'block';
 
-/* ==========================================================
-   EVENTOS GLOBAIS
-========================================================== */
+    // Ajusta classes ativas dos botões
+    els.btnKanbanView.classList.remove('active');
+    els.btnCalendarView.classList.add('active');
 
-/**
- * Recalcula o calendário quando a janela mudar de tamanho.
- */
-window.addEventListener(
-  'resize',
-  debounce(() => {
-    if (activeView === 'calendar') {
-      refreshCalendarSize();
-    }
-  }, 150),
-);
+    // Força o FullCalendar a recalcular o tamanho (evita bugs visuais por iniciar oculto)
+    refreshCalendarSize();
+  });
 
-/**
- * Fecha o modal ao pressionar Escape.
- * O modal.js pode complementar esse comportamento.
- */
-document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape') return;
-  if (!els.modalOverlay) return;
+  els.btnKanbanView.addEventListener('click', () => {
+    // Oculta o calendário, mostra o Kanban e o Dashboard
+    els.calendarSection.style.display = 'none';
+    els.board.style.display = 'grid'; // ou o display original do seu layout do board
+    if (els.dashboard) els.dashboard.style.display = 'block';
 
-  const modalIsOpen =
-    els.modalOverlay.classList.contains('is-visible') ||
-    els.modalOverlay.classList.contains('is-open');
-
-  if (!modalIsOpen) return;
-
-  els.modalOverlay.classList.remove('is-visible', 'is-open');
-  els.modalOverlay.setAttribute('aria-hidden', 'true');
-
-  if (els.modalPanel) {
-    els.modalPanel.innerHTML = '';
-  }
-});
-
-/* ==========================================================
-   FUNÇÕES AUXILIARES
-========================================================== */
-
-/**
- * Escapa caracteres HTML antes de inserir valores no innerHTML.
- *
- * @param {*} value Valor que será escapado.
- * @returns {string}
- */
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+    // Ajusta classes ativas dos botões
+    els.btnCalendarView.classList.remove('active');
+    els.btnKanbanView.classList.add('active');
+  });
 }
+...
