@@ -4,24 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Organização de Tarefas - Estratégia Corretora</title>
-<meta name="description" content="Gestão de demandas de design gráfico — da solicitação à entrega." />
+<meta name="description" content="Gestão de demandas" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..700&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,500&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="css/styles.css" />
-
-<style>
-/* Logo sizing for header / login / brandmark */
-.site-logo { height: 28px; width: auto; display: inline-block; margin-right: 10px; vertical-align: middle; }
-.site-logo--login { height: 26px; }
-.brandmark-logo { width: 84px; height: auto; display: block; }
-@media (max-width: 880px) {
-  .site-logo { height: 22px; }
-  .brandmark-logo { width: 64px; }
-}
-</style>
 </head>
 <body>
 
@@ -40,17 +29,17 @@
       <path fill="url(#blobGrad)" d="M421,67Q481,134,468,217Q455,300,432,372Q409,444,335,470Q261,496,189,463Q117,430,79,358Q41,286,64,206Q87,126,156,79Q225,32,303,30Q381,28,421,67Z" />
     </svg>
     <div class="login-screen__brandmark">
-      <img class="brandmark-logo" src="/Imagem1.png" alt="UNICOOB logo" />
+      <i data-lucide="palette"></i>
     </div>
   </div>
 
   <div class="login-screen__panel">
     <div class="login-card">
       <div class="login-card__logo">
-        <img class="site-logo site-logo--login" src="/Imagem1.png" alt="UNICOOB logo" />
-        <span>Creative Task Board</span>
+        <i data-lucide="layout-dashboard"></i>
+        <span>Gestão de Demandas</span>
       </div>
-      <p class="login-card__subtitle">Gestão de artes da Universidade Aberta à Terceira Idade</p>
+      <p class="login-card__subtitle">Organização de tarefas da equipe de Estratégia</p>
 
       <form id="login-form" class="login-form" novalidate>
         <label class="field">
@@ -79,7 +68,7 @@
 
   <header class="topbar">
     <div class="topbar__brand">
-      <img class="site-logo" src="/Imagem1.png" alt="UNICOOB logo" />
+      <i data-lucide="layout-dashboard"></i>
       <span>Organização de Tarefas - Estratégia</span>
     </div>
     <div class="view-switchers" style="padding: 10px; display: flex; gap: 10px;">
