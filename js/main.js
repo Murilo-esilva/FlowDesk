@@ -127,7 +127,7 @@ function bootstrapApp() {
     renderBoard();
     renderDashboard(tasks);
     populateAssigneeFilter(tasks);
-  
+  });
   initCalendar(tasks); 
   });
 }
@@ -241,4 +241,3 @@ if (els.btnKanbanView && els.btnCalendarView) {
     els.btnKanbanView.classList.add('active');
   });
 }
-...
