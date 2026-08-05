@@ -239,4 +239,4 @@ if (els.btnKanbanView && els.btnCalendarView) {
     els.btnCalendarView.classList.remove('active');
     els.btnKanbanView.classList.add('active');
   });
-}
+
