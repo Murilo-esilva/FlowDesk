@@ -1,32 +1,41 @@
 <!DOCTYPE html>
 <html lang="pt-BR" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-
-  <title>Gestão de Tarefas - Estratégia</title>
-
+  <title>Gestao de Tarefas - Estrategia</title>
   <meta
     name="description"
-    content="Gestão de demandas da área de estratégia"
-  />
+    content="Gestao de demandas da area de estrategia"
+  >
 
   <!-- Fontes -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..700&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,500&display=swap" rel="sty[...]"
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..700&amp;family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,500&amp;display=swap"
+  >
 
-  <!-- Styles -->
+  <!-- FullCalendar -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css"
+  >
+
+  <!-- Estilos da aplicacao -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body>
+  <noscript>
+    <div class="noscript-warning" role="alert">
+      Esta aplicacao precisa do JavaScript habilitado para funcionar.
+    </div>
+  </noscript>
 
-  <!-- Área de notificações -->
+  <!-- Area de notificacoes -->
   <div
     id="toast-root"
     class="toast-root"
@@ -37,7 +46,6 @@
   <!-- =====================================================
        TELA DE LOGIN
        ===================================================== -->
-
   <section
     id="login-screen"
     class="screen login-screen is-visible"
@@ -48,6 +56,7 @@
         class="login-blob"
         viewBox="0 0 600 600"
         xmlns="http://www.w3.org/2000/svg"
+        focusable="false"
       >
         <defs>
           <linearGradient
@@ -57,15 +66,15 @@
             x2="100%"
             y2="100%"
           >
-            <stop offset="0%" stop-color="#00AE9D" />
-            <stop offset="100%" stop-color="#006F5F" />
+            <stop offset="0%" stop-color="#00AE9D"></stop>
+            <stop offset="100%" stop-color="#006F5F"></stop>
           </linearGradient>
         </defs>
 
         <path
           fill="url(#blobGrad)"
           d="M421,67Q481,134,468,217Q455,300,432,372Q409,444,335,470Q261,496,189,463Q117,430,79,358Q41,286,64,206Q87,126,156,79Q225,32,303,30Q381,28,421,67Z"
-        />
+        ></path>
       </svg>
 
       <div class="login-screen__brandmark">
@@ -77,42 +86,42 @@
       <div class="login-card">
         <div class="login-card__logo">
           <i data-lucide="layout-dashboard"></i>
-          <span>Gestão de Demandas</span>
+          <span>Gestao de Demandas</span>
         </div>
 
         <p class="login-card__subtitle">
-          Gestão de demandas da área de estratégia
+          Gestao de demandas da area de estrategia
         </p>
 
         <form id="login-form" class="login-form" novalidate>
           <label class="field">
             <span>E-mail</span>
-
             <input
               type="email"
               name="email"
               required
               autocomplete="username"
+              inputmode="email"
               placeholder="voce@sicoob.com.br"
-            />
+            >
           </label>
 
           <label class="field">
             <span>Senha</span>
-
             <input
               type="password"
               name="password"
               required
               autocomplete="current-password"
-              placeholder="••••••••"
-            />
+              placeholder="Digite sua senha"
+            >
           </label>
 
           <p
             id="login-error"
             class="login-error"
             role="alert"
+            aria-live="assertive"
           ></p>
 
           <button
@@ -121,50 +130,49 @@
             class="btn btn--primary btn--block"
           >
             <span class="btn__label">Entrar</span>
-
             <i
               data-lucide="loader-2"
               class="btn__spinner"
+              aria-hidden="true"
             ></i>
           </button>
         </form>
 
         <p class="login-card__hint">
-          Acesso restrito à equipe de estratégia da Unicoob Corretora
+          Acesso restrito a equipe de estrategia da Unicoob Corretora
         </p>
       </div>
     </div>
   </section>
 
   <!-- =====================================================
-       APLICAÇÃO PRINCIPAL
+       APLICACAO PRINCIPAL
        ===================================================== -->
-
   <section
     id="app-screen"
     class="screen app-screen"
-    aria-label="Gestão de demandas"
+    aria-label="Gestao de demandas"
   >
-    <!-- Cabeçalho -->
     <header class="topbar">
       <div class="topbar__brand">
         <i data-lucide="layout-dashboard"></i>
-        <span>Gestão de Demandas</span>
+        <span>Gestao de Demandas</span>
       </div>
 
-      <!-- Alternância de visualização -->
+      <!-- Alternancia de visualizacao -->
       <nav
         class="view-switchers"
-        aria-label="Visualização das demandas"
+        aria-label="Visualizacao das demandas"
       >
         <button
           type="button"
           id="btn-kanban-view"
           class="btn active"
           aria-pressed="true"
+          aria-controls="kanban-section"
         >
-          <i data-lucide="columns-3"></i>
-          Quadro Kanban
+          <i data-lucide="columns-3" aria-hidden="true"></i>
+          <span>Quadro Kanban</span>
         </button>
 
         <button
@@ -172,9 +180,10 @@
           id="btn-calendar-view"
           class="btn"
           aria-pressed="false"
+          aria-controls="calendar-section"
         >
-          <i data-lucide="calendar-days"></i>
-          Agenda / Calendário
+          <i data-lucide="calendar-days" aria-hidden="true"></i>
+          <span>Agenda / Calendario</span>
         </button>
       </nav>
 
@@ -186,7 +195,7 @@
           aria-label="Alternar tema"
           title="Alternar tema"
         >
-          <i data-lucide="sun-moon"></i>
+          <i data-lucide="sun-moon" aria-hidden="true"></i>
         </button>
 
         <div class="topbar__user">
@@ -194,9 +203,7 @@
             class="avatar avatar--user"
             id="user-avatar"
             aria-hidden="true"
-          >
-            --
-          </span>
+          >--</span>
 
           <span
             id="user-email"
@@ -211,14 +218,12 @@
           aria-label="Sair"
           title="Sair"
         >
-          <i data-lucide="log-out"></i>
+          <i data-lucide="log-out" aria-hidden="true"></i>
         </button>
       </div>
     </header>
 
-    <!-- Conteúdo principal -->
     <main class="app-main">
-
       <!-- Dashboard -->
       <section
         class="dashboard"
@@ -227,13 +232,12 @@
       ></section>
 
       <!-- =================================================
-           VISUALIZAÇÃO KANBAN
+           VISUALIZACAO KANBAN
            ================================================= -->
-
       <section
         id="kanban-section"
         class="view-section view-section--kanban"
-        aria-label="Visualização em quadro Kanban"
+        aria-label="Visualizacao em quadro Kanban"
       >
         <!-- Busca e filtros -->
         <section
@@ -241,14 +245,14 @@
           aria-label="Pesquisa e filtros"
         >
           <div class="toolbar__search">
-            <i data-lucide="search"></i>
-
+            <i data-lucide="search" aria-hidden="true"></i>
             <input
               type="search"
               id="search-input"
-              placeholder="Buscar por título, tag ou responsável..."
+              placeholder="Buscar por titulo, tag ou responsavel..."
               aria-label="Buscar tarefas"
-            />
+              autocomplete="off"
+            >
           </div>
 
           <div class="toolbar__filters">
@@ -271,9 +275,9 @@
             <select
               id="filter-assignee"
               class="select-control"
-              aria-label="Filtrar por responsável"
+              aria-label="Filtrar por responsavel"
             >
-              <option value="all">Todos os responsáveis</option>
+              <option value="all">Todos os responsaveis</option>
             </select>
 
             <select
@@ -292,25 +296,11 @@
               class="select-control"
               aria-label="Ordenar tarefas"
             >
-              <option value="createdAt-desc">
-                Mais recentes
-              </option>
-
-              <option value="createdAt-asc">
-                Mais antigas
-              </option>
-
-              <option value="dueDate-asc">
-                Prazo mais próximo
-              </option>
-
-              <option value="priority-desc">
-                Prioridade
-              </option>
-
-              <option value="title-asc">
-                Título A–Z
-              </option>
+              <option value="createdAt-desc">Mais recentes</option>
+              <option value="createdAt-asc">Mais antigas</option>
+              <option value="dueDate-asc">Prazo mais proximo</option>
+              <option value="priority-desc">Prioridade</option>
+              <option value="title-asc">Titulo A-Z</option>
             </select>
 
             <button
@@ -320,7 +310,7 @@
               aria-label="Limpar filtros"
               title="Limpar filtros"
             >
-              <i data-lucide="filter-x"></i>
+              <i data-lucide="filter-x" aria-hidden="true"></i>
             </button>
           </div>
 
@@ -329,8 +319,8 @@
             id="new-task-btn"
             class="btn btn--primary"
           >
-            <i data-lucide="plus"></i>
-            Nova tarefa
+            <i data-lucide="plus" aria-hidden="true"></i>
+            <span>Nova tarefa</span>
           </button>
         </section>
 
@@ -339,29 +329,27 @@
           class="kanban-board"
           id="kanban-board"
           aria-label="Quadro Kanban"
+          aria-live="polite"
         ></section>
       </section>
 
       <!-- =================================================
-           VISUALIZAÇÃO DO CALENDÁRIO
+           VISUALIZACAO DO CALENDARIO
            ================================================= -->
-
       <section
         id="calendar-section"
         class="view-section view-section--calendar"
-        aria-label="Agenda e calendário"
+        aria-label="Agenda e calendario"
         hidden
       >
         <div id="calendar"></div>
       </section>
-
     </main>
   </section>
 
   <!-- =====================================================
        MODAL DE TAREFA
        ===================================================== -->
-
   <div
     id="modal-overlay"
     class="modal-overlay"
@@ -373,20 +361,13 @@
       role="dialog"
       aria-modal="true"
       aria-label="Dados da tarefa"
+      tabindex="-1"
     ></div>
   </div>
 
-  <!-- FullCalendar -->
+  <!-- Bibliotecas globais carregadas antes do modulo principal -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
-  <script>
-    window.addEventListener("DOMContentLoaded", function () {
-      window.lucide?.createIcons();
-    });
-  </script>
 
   <!-- JavaScript principal -->
   <script type="module" src="js/main.js"></script>
