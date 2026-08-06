@@ -1,154 +1,53 @@
 /**
  * main.js
- * Ponto de entrada. Orquestra autenticação, inicialização dos módulos de UI
- * e conecta os controles globais (busca, filtros, botão "nova tarefa").
+ * Ponto de entrada da aplicacao.
+ *
+ * Responsabilidades:
+ * - Orquestrar autenticacao e troca entre as telas de login e aplicacao.
+ * - Inicializar Kanban, modal, dashboard e calendario.
+ * - Conectar busca, filtros, ordenacao, tema e troca de visualizacao.
+ * - Iniciar e interromper a sincronizacao de tarefas.
  */
+
 import { initCalendar, refreshCalendarSize } from './calendar.js';
 import { login, logout, observeAuth, translateAuthError } from './auth.js';
-import { startTasksListener, stopTasksListener, onTasksChange } from './tasks.js';
+import {
+  startTasksListener,
+  stopTasksListener,
+  onTasksChange,
+} from './tasks.js';
 import { initKanban, renderBoard } from './kanban.js';
-import { initModal, openCreateModal, openEditModal } from './modal.js';
+import {
+  initModal,
+  openCreateModal,
+  openEditModal,
+} from './modal.js';
 import { initDashboard, renderDashboard } from './dashboard.js';
 import {
-  setFilter, resetFilters, uniqueAssignees,
+  setFilter,
+  resetFilters,
+  uniqueAssignees,
 } from './filters.js';
-import { debounce, toast, CATEGORIES, PRIORITIES } from './utils.js';
+import {
+  debounce,
+  toast,
+  CATEGORIES,
+  PRIORITIES,
+} from './utils.js';
 
 let currentUser = null;
-let els = {}; // será preenchido no DOMContentLoaded
-
-/* ---------- Funções auxiliares que usam `els` ---------- */
-
-function showLogin() {
-  if (!els.appScreen || !els.loginScreen) return;
-  els.appScreen.classList.remove('is-visible');
-  els.loginScreen.classList.add('is-visible');
-}
-
-function showApp(user) {
-  if (!els.loginScreen || !els.appScreen || !els.userEmail || !els.userAvatar) return;
-  els.loginScreen.classList.remove('is-visible');
-  els.appScreen.classList.add('is-visible');
-  els.userEmail.textContent = user.email;
-  els.userAvatar.textContent = user.email.slice(0, 2).toUpperCase();
-  bootstrapApp();
-}
-
-/* ---------- Bootstrap dos módulos (uma vez por sessão) ---------- */
+let els = {};
 let bootstrapped = false;
+let unsubscribeTasksChange = null;
 
-function bootstrapApp() {
-  if (bootstrapped) {
-    if (typeof startTasksListener === 'function') startTasksListener();
-    return;
-  }
-  bootstrapped = true;
-
-  populateStaticFilters();
-
-  initKanban(els.board, {
-    onCardClick: (taskId) => openEditModal(taskId),
-    getUserEmail: () => currentUser?.email,
-  });
-
-  initModal(els.modalOverlay, els.modalPanel, {
-    getUserEmail: () => currentUser?.email,
-  });
-
-  initDashboard(els.dashboard);
-
-  bindToolbarEvents();
-  if (typeof startTasksListener === 'function') startTasksListener();
-
-  onTasksChange((tasks) => {
-    renderBoard();
-    renderDashboard(tasks);
-    populateAssigneeFilter(tasks);
-    initCalendar(tasks);
-  });
-}
-
-function populateStaticFilters() {
-  if (!els.filterCategory || !els.filterPriority) return;
-
-  els.filterCategory.innerHTML =
-    `<option value="all">Todas categorias</option>` +
-    CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join('');
-
-  els.filterPriority.innerHTML =
-    `<option value="all">Todas prioridades</option>` +
-    PRIORITIES.map((p) => `<option value="${p.id}">${p.label}</option>`).join('');
-}
-
-function populateAssigneeFilter(tasks) {
-  if (!els.filterAssignee) return;
-  const current = els.filterAssignee.value || 'all';
-  const names = uniqueAssignees(tasks);
-  els.filterAssignee.innerHTML =
-    `<option value="all">Todos responsáveis</option>` +
-    names.map((n) => `<option value="${n}">${n}</option>`).join('');
-  if (names.includes(current)) els.filterAssignee.value = current;
-}
-
-/* ---------- Toolbar: busca, filtros, ordenação, nova tarefa ---------- */
-function bindToolbarEvents() {
-  if (els.newTaskBtn) els.newTaskBtn.addEventListener('click', () => openCreateModal());
-
-  const debouncedSearch = debounce((value) => {
-    setFilter('search', value);
-    renderBoard();
-  }, 200);
-
-  if (els.searchInput) els.searchInput.addEventListener('input', (e) => debouncedSearch(e.target.value));
-
-  if (els.filterCategory) els.filterCategory.addEventListener('change', (e) => {
-    setFilter('category', e.target.value);
-    renderBoard();
-  });
-  if (els.filterPriority) els.filterPriority.addEventListener('change', (e) => {
-    setFilter('priority', e.target.value);
-    renderBoard();
-  });
-  if (els.filterAssignee) els.filterAssignee.addEventListener('change', (e) => {
-    setFilter('assignee', e.target.value);
-    renderBoard();
-  });
-  if (els.filterDeadline) els.filterDeadline.addEventListener('change', (e) => {
-    setFilter('deadline', e.target.value);
-    renderBoard();
-  });
-  if (els.sortSelect) els.sortSelect.addEventListener('change', (e) => {
-    setFilter('sortBy', e.target.value);
-    renderBoard();
-  });
-
-  if (els.resetFiltersBtn) els.resetFiltersBtn.addEventListener('click', () => {
-    resetFilters();
-    if (els.searchInput) els.searchInput.value = '';
-    if (els.filterCategory) els.filterCategory.value = 'all';
-    if (els.filterPriority) els.filterPriority.value = 'all';
-    if (els.filterAssignee) els.filterAssignee.value = 'all';
-    if (els.filterDeadline) els.filterDeadline.value = 'all';
-    if (els.sortSelect) els.sortSelect.value = 'createdAt-desc';
-    renderBoard();
-    toast('Filtros limpos.', 'info', 1800);
-  });
-}
-
-/* ---------- Tema ---------- */
 const THEME_KEY = 'ctb-theme';
 
-function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  const theme = saved || 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-}
+/* =========================================================
+   VALIDACAO DA ESTRUTURA DA PAGINA
+   ========================================================= */
 
-/* ---------- DOM ready: Query elements and wire handlers ---------- */
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Preencher referência aos elementos somente quando o DOM estiver pronto
-  els = {
+function getRequiredElements() {
+  return {
     loginScreen: document.getElementById('login-screen'),
     appScreen: document.getElementById('app-screen'),
     loginForm: document.getElementById('login-form'),
@@ -157,8 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
     userEmail: document.getElementById('user-email'),
     userAvatar: document.getElementById('user-avatar'),
     logoutBtn: document.getElementById('logout-btn'),
-    board: document.getElementById('kanban-board'),
+
     dashboard: document.getElementById('dashboard'),
+    kanbanSection: document.getElementById('kanban-section'),
+    board: document.getElementById('kanban-board'),
+    calendarSection: document.getElementById('calendar-section'),
+    calendar: document.getElementById('calendar'),
+
     newTaskBtn: document.getElementById('new-task-btn'),
     searchInput: document.getElementById('search-input'),
     filterCategory: document.getElementById('filter-category'),
@@ -167,95 +71,434 @@ document.addEventListener('DOMContentLoaded', () => {
     filterDeadline: document.getElementById('filter-deadline'),
     sortSelect: document.getElementById('sort-select'),
     resetFiltersBtn: document.getElementById('reset-filters-btn'),
+
     modalOverlay: document.getElementById('modal-overlay'),
     modalPanel: document.getElementById('modal-panel'),
-    themeToggle: document.getElementById('theme-toggle'),
-    calendarSection: document.getElementById('calendar-section'), // Container do FullCalendar
-    btnKanbanView: document.getElementById('btn-kanban-view'),     // Botão aba Kanban
-    btnCalendarView: document.getElementById('btn-calendar-view'), // Botão aba Agenda
-  };
 
-  // Observa autenticação e mostra telas adequadas
-  observeAuth((user) => {
-    currentUser = user;
-    if (user) {
-      showApp(user);
-    } else {
-      showLogin();
+    themeToggle: document.getElementById('theme-toggle'),
+    btnKanbanView: document.getElementById('btn-kanban-view'),
+    btnCalendarView: document.getElementById('btn-calendar-view'),
+  };
+}
+
+function validateRequiredElements() {
+  const required = [
+    'loginScreen',
+    'appScreen',
+    'loginForm',
+    'loginError',
+    'loginSubmitBtn',
+    'userEmail',
+    'userAvatar',
+    'logoutBtn',
+    'dashboard',
+    'kanbanSection',
+    'board',
+    'calendarSection',
+    'calendar',
+    'newTaskBtn',
+    'searchInput',
+    'filterCategory',
+    'filterPriority',
+    'filterAssignee',
+    'filterDeadline',
+    'sortSelect',
+    'resetFiltersBtn',
+    'modalOverlay',
+    'modalPanel',
+    'themeToggle',
+    'btnKanbanView',
+    'btnCalendarView',
+  ];
+
+  const missing = required.filter((key) => !els[key]);
+
+  if (missing.length > 0) {
+    console.error(
+      '[main] Elementos obrigatorios ausentes no HTML:',
+      missing
+    );
+    return false;
+  }
+
+  return true;
+}
+
+/* =========================================================
+   TELAS E AUTENTICACAO
+   ========================================================= */
+
+function showLogin() {
+  if (!els.appScreen || !els.loginScreen) return;
+
+  els.appScreen.classList.remove('is-visible');
+  els.loginScreen.classList.add('is-visible');
+}
+
+function showApp(user) {
+  if (
+    !els.loginScreen ||
+    !els.appScreen ||
+    !els.userEmail ||
+    !els.userAvatar
+  ) {
+    return;
+  }
+
+  const email = user?.email || 'Usuario';
+
+  els.loginScreen.classList.remove('is-visible');
+  els.appScreen.classList.add('is-visible');
+  els.userEmail.textContent = email;
+  els.userAvatar.textContent = email.slice(0, 2).toUpperCase();
+
+  bootstrapApp();
+}
+
+function setLoginLoading(isLoading) {
+  if (!els.loginSubmitBtn) return;
+
+  els.loginSubmitBtn.disabled = isLoading;
+  els.loginSubmitBtn.classList.toggle('is-loading', isLoading);
+  els.loginSubmitBtn.setAttribute(
+    'aria-busy',
+    String(isLoading)
+  );
+}
+
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  if (!els.loginForm) return;
+
+  const formData = new FormData(els.loginForm);
+  const email = String(formData.get('email') || '').trim();
+  const password = String(formData.get('password') || '');
+
+  if (els.loginError) {
+    els.loginError.textContent = '';
+  }
+
+  if (!email || !password) {
+    if (els.loginError) {
+      els.loginError.textContent = 'Informe o e-mail e a senha.';
     }
+    return;
+  }
+
+  setLoginLoading(true);
+
+  try {
+    await login(email, password);
+    els.loginForm.reset();
+  } catch (error) {
+    console.error('[main] Erro no login:', error);
+
+    if (els.loginError) {
+      els.loginError.textContent = translateAuthError(error?.code);
+    }
+  } finally {
+    setLoginLoading(false);
+  }
+}
+
+async function handleLogout() {
+  if (!els.logoutBtn) return;
+
+  els.logoutBtn.disabled = true;
+  els.logoutBtn.setAttribute('aria-busy', 'true');
+
+  try {
+    await logout();
+    stopTasksListener();
+  } catch (error) {
+    console.error('[main] Erro no logout:', error);
+    toast('Nao foi possivel sair. Tente novamente.', 'error');
+
+    // Mantem a aplicacao sincronizada se o logout falhar.
+    startTasksListener();
+  } finally {
+    els.logoutBtn.disabled = false;
+    els.logoutBtn.setAttribute('aria-busy', 'false');
+  }
+}
+
+/* =========================================================
+   INICIALIZACAO DOS MODULOS
+   ========================================================= */
+
+function bootstrapApp() {
+  if (bootstrapped) {
+    startTasksListener();
+    return;
+  }
+
+  bootstrapped = true;
+
+  try {
+    populateStaticFilters();
+
+    initKanban(els.board, {
+      onCardClick: (taskId) => openEditModal(taskId),
+      getUserEmail: () => currentUser?.email || null,
+    });
+
+    initModal(els.modalOverlay, els.modalPanel, {
+      getUserEmail: () => currentUser?.email || null,
+    });
+
+    initDashboard(els.dashboard);
+    bindToolbarEvents();
+    bindViewEvents();
+
+    unsubscribeTasksChange = onTasksChange((tasks) => {
+      renderBoard();
+      renderDashboard(tasks);
+      populateAssigneeFilter(tasks);
+
+      // calendar.js deve reutilizar ou destruir a instancia anterior.
+      initCalendar(tasks);
+    });
+
+    startTasksListener();
+  } catch (error) {
+    bootstrapped = false;
+    console.error('[main] Falha ao inicializar a aplicacao:', error);
+    toast('Nao foi possivel inicializar a aplicacao.', 'error');
+  }
+}
+
+/* =========================================================
+   FILTROS
+   ========================================================= */
+
+function appendOption(selectElement, value, label) {
+  const option = document.createElement('option');
+  option.value = value;
+  option.textContent = label;
+  selectElement.appendChild(option);
+}
+
+function populateStaticFilters() {
+  if (!els.filterCategory || !els.filterPriority) return;
+
+  els.filterCategory.replaceChildren();
+  appendOption(
+    els.filterCategory,
+    'all',
+    'Todas as categorias'
+  );
+
+  CATEGORIES.forEach((category) => {
+    appendOption(
+      els.filterCategory,
+      category,
+      category
+    );
   });
 
-  // Login form
-  if (els.loginForm) {
-    els.loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd = new FormData(els.loginForm);
-      const email = fd.get('email');
-      const password = fd.get('password');
-      if (els.loginError) els.loginError.textContent = '';
-      if (els.loginSubmitBtn) {
-        els.loginSubmitBtn.disabled = true;
-        els.loginSubmitBtn.classList.add('is-loading');
-      }
+  els.filterPriority.replaceChildren();
+  appendOption(
+    els.filterPriority,
+    'all',
+    'Todas as prioridades'
+  );
 
-      try {
-        await login(email, password);
-        els.loginForm.reset();
-      } catch (err) {
-        if (els.loginError) els.loginError.textContent = translateAuthError(err.code);
-      } finally {
-        if (els.loginSubmitBtn) {
-          els.loginSubmitBtn.disabled = false;
-          els.loginSubmitBtn.classList.remove('is-loading');
-        }
-      }
-    });
+  PRIORITIES.forEach((priority) => {
+    appendOption(
+      els.filterPriority,
+      priority.id,
+      priority.label
+    );
+  });
+}
+
+function populateAssigneeFilter(tasks) {
+  if (!els.filterAssignee) return;
+
+  const currentValue = els.filterAssignee.value || 'all';
+  const names = uniqueAssignees(tasks);
+
+  els.filterAssignee.replaceChildren();
+  appendOption(
+    els.filterAssignee,
+    'all',
+    'Todos os responsaveis'
+  );
+
+  names.forEach((name) => {
+    appendOption(els.filterAssignee, name, name);
+  });
+
+  if (names.includes(currentValue)) {
+    els.filterAssignee.value = currentValue;
+  } else {
+    els.filterAssignee.value = 'all';
+
+    if (currentValue !== 'all') {
+      setFilter('assignee', 'all');
+    }
+  }
+}
+
+function renderFilteredBoard(filterName, value) {
+  setFilter(filterName, value);
+  renderBoard();
+}
+
+function resetToolbarFilters() {
+  resetFilters();
+
+  els.searchInput.value = '';
+  els.filterCategory.value = 'all';
+  els.filterPriority.value = 'all';
+  els.filterAssignee.value = 'all';
+  els.filterDeadline.value = 'all';
+  els.sortSelect.value = 'createdAt-desc';
+
+  renderBoard();
+  toast('Filtros limpos.', 'info', 1800);
+}
+
+function bindToolbarEvents() {
+  els.newTaskBtn.addEventListener('click', () => {
+    openCreateModal();
+  });
+
+  const debouncedSearch = debounce((value) => {
+    renderFilteredBoard('search', value);
+  }, 200);
+
+  els.searchInput.addEventListener('input', (event) => {
+    debouncedSearch(event.target.value);
+  });
+
+  els.filterCategory.addEventListener('change', (event) => {
+    renderFilteredBoard('category', event.target.value);
+  });
+
+  els.filterPriority.addEventListener('change', (event) => {
+    renderFilteredBoard('priority', event.target.value);
+  });
+
+  els.filterAssignee.addEventListener('change', (event) => {
+    renderFilteredBoard('assignee', event.target.value);
+  });
+
+  els.filterDeadline.addEventListener('change', (event) => {
+    renderFilteredBoard('deadline', event.target.value);
+  });
+
+  els.sortSelect.addEventListener('change', (event) => {
+    renderFilteredBoard('sortBy', event.target.value);
+  });
+
+  els.resetFiltersBtn.addEventListener(
+    'click',
+    resetToolbarFilters
+  );
+}
+
+/* =========================================================
+   TEMA
+   ========================================================= */
+
+function initTheme() {
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  const theme = savedTheme === 'light' ? 'light' : 'dark';
+
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+function toggleTheme() {
+  const currentTheme =
+    document.documentElement.getAttribute('data-theme');
+
+  const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+  document.documentElement.setAttribute('data-theme', nextTheme);
+  localStorage.setItem(THEME_KEY, nextTheme);
+}
+
+/* =========================================================
+   ALTERNANCIA ENTRE KANBAN E CALENDARIO
+   ========================================================= */
+
+function showKanbanView() {
+  els.kanbanSection.hidden = false;
+  els.calendarSection.hidden = true;
+  els.dashboard.hidden = false;
+
+  els.btnKanbanView.classList.add('active');
+  els.btnCalendarView.classList.remove('active');
+
+  els.btnKanbanView.setAttribute('aria-pressed', 'true');
+  els.btnCalendarView.setAttribute('aria-pressed', 'false');
+}
+
+function showCalendarView() {
+  els.kanbanSection.hidden = true;
+  els.calendarSection.hidden = false;
+  els.dashboard.hidden = true;
+
+  els.btnKanbanView.classList.remove('active');
+  els.btnCalendarView.classList.add('active');
+
+  els.btnKanbanView.setAttribute('aria-pressed', 'false');
+  els.btnCalendarView.setAttribute('aria-pressed', 'true');
+
+  // Aguarda o navegador aplicar a mudanca de visibilidade.
+  requestAnimationFrame(() => {
+    refreshCalendarSize();
+  });
+}
+
+function bindViewEvents() {
+  els.btnKanbanView.addEventListener('click', showKanbanView);
+  els.btnCalendarView.addEventListener('click', showCalendarView);
+}
+
+/* =========================================================
+   INICIALIZACAO DA PAGINA
+   ========================================================= */
+
+document.addEventListener('DOMContentLoaded', () => {
+  els = getRequiredElements();
+
+  if (!validateRequiredElements()) {
+    return;
   }
 
-  // Logout
-  if (els.logoutBtn) {
-    els.logoutBtn.addEventListener('click', async () => {
-      stopTasksListener();
-      await logout();
-    });
-  }
-
-  // Inicializa tema
   initTheme();
-  if (els.themeToggle) {
-    els.themeToggle.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem(THEME_KEY, next);
-    });
-  }
+  showKanbanView();
 
-  // View toggle (Kanban / Calendar)
-  if (els.btnKanbanView && els.btnCalendarView) {
-    els.btnCalendarView.addEventListener('click', () => {
-      // Oculta o Kanban e o Dashboard (se necessário), mostra o calendário
-      if (els.board) els.board.style.display = 'none';
-      if (els.dashboard) els.dashboard.style.display = 'none';
-      if (els.calendarSection) els.calendarSection.style.display = 'block';
+  els.loginForm.addEventListener('submit', handleLoginSubmit);
+  els.logoutBtn.addEventListener('click', handleLogout);
+  els.themeToggle.addEventListener('click', toggleTheme);
 
-      // Ajusta classes ativas dos botões
-      els.btnKanbanView.classList.remove('active');
-      els.btnCalendarView.classList.add('active');
+  observeAuth((user) => {
+    currentUser = user;
 
-      // Força o FullCalendar a recalcular o tamanho (evita bugs visuais por iniciar oculto)
-      refreshCalendarSize();
-    });
+    if (user) {
+      showApp(user);
+      return;
+    }
 
-    els.btnKanbanView.addEventListener('click', () => {
-      // Oculta o calendário, mostra o Kanban e o Dashboard
-      if (els.calendarSection) els.calendarSection.style.display = 'none';
-      if (els.board) els.board.style.display = 'grid'; // ou o display original do seu layout do board
-      if (els.dashboard) els.dashboard.style.display = 'block';
+    // Garante que dados da sessao anterior nao continuem sincronizando.
+    stopTasksListener();
+    showLogin();
+  });
 
-      // Ajusta classes ativas dos botões
-      els.btnCalendarView.classList.remove('active');
-      els.btnKanbanView.classList.add('active');
-    });
-  }
+  window.lucide?.createIcons();
 });
+
+/*
+ * Mantido para facilitar uma futura rotina de desmontagem da SPA.
+ * Atualmente a pagina possui um unico ciclo de vida.
+ */
+export function destroyMain() {
+  stopTasksListener();
+  unsubscribeTasksChange?.();
+  unsubscribeTasksChange = null;
+  bootstrapped = false;
+}
