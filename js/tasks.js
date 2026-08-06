@@ -53,7 +53,7 @@ function normalizeTask(id, data) {
 }
 
 /** Inicia o listener em tempo real. Deve ser chamado uma única vez após login. */
-export function startTaskslistener() {
+export function startTasksListener() {
   if (unsubscribeSnapshot) return; // já ativo
   const q = query(collection(db, TASKS_COLLECTION), orderBy('createdAt', 'desc'));
   unsubscribeSnapshot = onSnapshot(
