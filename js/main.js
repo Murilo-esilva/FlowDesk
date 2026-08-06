@@ -5,7 +5,7 @@
  */
 import { initCalendar, refreshCalendarSize } from './calendar.js';
 import { login, logout, observeAuth, translateAuthError } from './auth.js';
-import { startTaskslistener, stopTasksListener, onTasksChange } from './tasks.js';
+import { startTasksListener, stopTasksListener, onTasksChange } from './tasks.js';
 import { initKanban, renderBoard } from './kanban.js';
 import { initModal, openCreateModal, openEditModal } from './modal.js';
 import { initDashboard, renderDashboard } from './dashboard.js';
@@ -39,7 +39,7 @@ let bootstrapped = false;
 
 function bootstrapApp() {
   if (bootstrapped) {
-    if (typeof startTaskslistener === 'function') startTaskslistener();
+    if (typeof startTasksListener === 'function') startTasksListener();
     return;
   }
   bootstrapped = true;
@@ -58,7 +58,7 @@ function bootstrapApp() {
   initDashboard(els.dashboard);
 
   bindToolbarEvents();
-  if (typeof startTaskslistener === 'function') startTaskslistener();
+  if (typeof startTasksListener === 'function') startTasksListener();
 
   onTasksChange((tasks) => {
     renderBoard();
